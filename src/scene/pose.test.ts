@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getPose, KEYFRAMES } from './pose'
 import { POSE_TIMES } from './timeline'
-import { flapBounds, type Flap } from './geometry'
+import { flapBounds, slipBounds, type Flap } from './geometry'
 
 describe('getPose', () => {
   it('returns the exact keyframe values at each keyframe time', () => {
@@ -35,5 +35,23 @@ describe('closed pose silhouette', () => {
       expect(bounds.maxX).toBeLessThanOrEqual(epsilon)
       expect(bounds.maxY).toBeLessThanOrEqual(epsilon)
     }
+  })
+})
+
+describe('slip vertical position', () => {
+  it('rests its bottom edge on the fold1 crease at the half and open poses', () => {
+    const radius = 100
+    for (const t of [0.33, 0.66]) {
+      const pose = getPose(t)
+      const { bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
+      expect(bottom).toBeCloseTo(0)
+    }
+  })
+
+  it('is centered on the canvas once fully revealed', () => {
+    const radius = 100
+    const pose = getPose(1)
+    const { top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
+    expect(top + bottom).toBeCloseTo(0)
   })
 })

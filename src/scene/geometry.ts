@@ -117,3 +117,24 @@ export function flapBounds(flap: Flap, fold1: number, fold2: number, radius: num
     maxY: Math.max(y1, y2),
   }
 }
+
+export interface SlipBounds {
+  halfLength: number
+  /** Top edge y (more negative), in the paper's folded coordinate space. */
+  top: number
+  /** Bottom edge y — sits exactly on the fold1 crease (y = 0) when slipLift = 1. */
+  bottom: number
+}
+
+/**
+ * The slip's horizontal half-length and vertical extent for a given pose. At
+ * slipLift = 1 the slip's bottom edge rests on the fold1 crease (y = 0) and its
+ * body extends upward into the top half; at slipLift = 0 it's centered on y = 0.
+ */
+export function slipBounds(radius: number, slipScale: number, slipLift: number): SlipBounds {
+  const diameter = radius * 2
+  const halfLength = (SLIP_LENGTH_FACTOR * diameter * slipScale) / 2
+  const height = SLIP_HEIGHT_FACTOR * diameter * slipScale
+  const bottom = lerp(height / 2, 0, slipLift)
+  return { halfLength, top: bottom - height, bottom }
+}

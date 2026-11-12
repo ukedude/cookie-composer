@@ -6,8 +6,7 @@ import {
   coverFitSource,
   isFlapBackSide,
   PAPER_RADIUS_FACTOR,
-  SLIP_HEIGHT_FACTOR,
-  SLIP_LENGTH_FACTOR,
+  slipBounds,
   type Flap,
 } from './geometry'
 import { fitText, type MeasureFn } from './text'
@@ -178,14 +177,6 @@ function drawFlap(
   ctx.restore()
 }
 
-function slipDimensions(radius: number, slipScale: number) {
-  const diameter = radius * 2
-  return {
-    halfLength: (SLIP_LENGTH_FACTOR * diameter * slipScale) / 2,
-    height: SLIP_HEIGHT_FACTOR * diameter * slipScale,
-  }
-}
-
 function drawSlipHalf(
   ctx: CanvasRenderingContext2D,
   side: Side,
@@ -193,11 +184,11 @@ function drawSlipHalf(
   config: Config,
   radius: number,
 ): void {
-  const { halfLength, height } = slipDimensions(radius, pose.slipScale)
+  const { halfLength, top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
   const x0 = side === 'left' ? -halfLength : 0
   const x1 = side === 'left' ? 0 : halfLength
   const roundedEnd: Side = side
-  paintSlipPath(ctx, pose, config, buildHalfSlipPath(x0, x1, height, roundedEnd))
+  paintSlipPath(ctx, pose, config, buildHalfSlipPath(x0, x1, top, bottom, roundedEnd))
 }
 
 /** The slip once both halves are coincident (fold2 === 0) — one shape, one shadow, no seam. */
@@ -207,8 +198,8 @@ function drawFullSlip(
   config: Config,
   radius: number,
 ): void {
-  const { halfLength, height } = slipDimensions(radius, pose.slipScale)
-  paintSlipPath(ctx, pose, config, buildFullSlipPath(halfLength, height))
+  const { halfLength, top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
+  paintSlipPath(ctx, pose, config, buildFullSlipPath(halfLength, top, bottom))
 }
 
 function paintSlipPath(ctx: CanvasRenderingContext2D, pose: Pose, config: Config, path: Path2D): void {
@@ -236,9 +227,14 @@ function paintSlipPath(ctx: CanvasRenderingContext2D, pose: Pose, config: Config
  * subpath as closed, so this still fills the full rect, but stroke() won't draw a
  * border down the middle where the two halves meet.
  */
-function buildHalfSlipPath(x0: number, x1: number, height: number, roundedEnd: Side): Path2D {
-  const y0 = -height / 2
-  const y1 = height / 2
+function buildHalfSlipPath(
+  x0: number,
+  x1: number,
+  y0: number,
+  y1: number,
+  roundedEnd: Side,
+): Path2D {
+  const height = y1 - y0
   const cornerRadius = Math.min(height * SLIP_CORNER_RATIO, (x1 - x0) / 2)
   const path = new Path2D()
 
@@ -261,11 +257,10 @@ function buildHalfSlipPath(x0: number, x1: number, height: number, roundedEnd: S
 }
 
 /** Full rounded-rect slip outline, used once the two halves are coincident. */
-function buildFullSlipPath(halfLength: number, height: number): Path2D {
+function buildFullSlipPath(halfLength: number, y0: number, y1: number): Path2D {
   const x0 = -halfLength
   const x1 = halfLength
-  const y0 = -height / 2
-  const y1 = height / 2
+  const height = y1 - y0
   const cornerRadius = Math.min(height * SLIP_CORNER_RATIO, halfLength)
   const path = new Path2D()
 
@@ -288,7 +283,9 @@ function drawRevealedText(
   config: Config,
   radius: number,
 ): void {
-  const { halfLength, height } = slipDimensions(radius, pose.slipScale)
+  const { halfLength, top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
+  const height = bottom - top
+  const centerY = (top + bottom) / 2
   const maxWidth = halfLength * 2 * 0.85
   const maxHeight = height * 0.8
 
@@ -311,7 +308,7 @@ function drawRevealedText(
   ctx.textBaseline = 'middle'
 
   const lineHeight = fontSize * 1.25
-  const startY = -((lines.length - 1) * lineHeight) / 2
+  const startY = centerY - ((lines.length - 1) * lineHeight) / 2
   lines.forEach((line, i) => {
     ctx.fillText(line, 0, startY + i * lineHeight)
   })

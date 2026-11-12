@@ -17,5 +17,7 @@ export interface Pose {
   fold2: number
   slipScale: number
   slipOpacity: number
+  /** 1 = slip's bottom edge rests on the fold1 crease (tucked in the fold); 0 = centered on canvas. */
+  slipLift: number
   textOpacity: number
 }

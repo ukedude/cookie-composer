@@ -25,6 +25,7 @@ export const KEYFRAMES: readonly Pose[] = [
     fold2: Math.PI,
     slipScale: 1,
     slipOpacity: 1,
+    slipLift: 1,
     textOpacity: 0,
   },
   {
@@ -34,6 +35,7 @@ export const KEYFRAMES: readonly Pose[] = [
     fold2: 0,
     slipScale: 1,
     slipOpacity: 1,
+    slipLift: 1,
     textOpacity: 0,
   },
   {
@@ -43,6 +45,7 @@ export const KEYFRAMES: readonly Pose[] = [
     fold2: 0,
     slipScale: 1,
     slipOpacity: 1,
+    slipLift: 1,
     textOpacity: 0,
   },
   {
@@ -52,6 +55,7 @@ export const KEYFRAMES: readonly Pose[] = [
     fold2: 0,
     slipScale: REVEAL_SLIP_SCALE,
     slipOpacity: 1,
+    slipLift: 0,
     textOpacity: 1,
   },
 ]
@@ -63,6 +67,7 @@ const POSE_KEYS = [
   'fold2',
   'slipScale',
   'slipOpacity',
+  'slipLift',
   'textOpacity',
 ] as const satisfies readonly (keyof Pose)[]
 
