@@ -31,7 +31,7 @@ public/papers/  starter paper images (square JPGs, 1024 px)
 
 ## Progress
 - [x] Phase 0 Scaffold
-- [ ] Phase 1 Static scene
+- [x] Phase 1 Static scene
 - [ ] Phase 2 Animation
 - [ ] Phase 3 Composer UI
 - [ ] Phase 4 GIF export
