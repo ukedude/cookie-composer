@@ -13,6 +13,7 @@ A 4-5 inch circle of decorative paper is folded in half. A rectangular paper sli
 - GIF target: 480x480, 15 fps, under 1 MB, final frame held about 4 s using the frame delay (not duplicate frames).
 - Ask before adding any dependency. Approved so far: react, react-dom, vite, typescript, gifenc, idb-keyval, vite-plugin-pwa.
 - Keep files small and focused. Prefer plain CSS modules over UI frameworks.
+- Paper is patterned on both sides; the slip is white with a shadow and thin border.
 
 ## Stack
 Vite + React (current version) + TypeScript (strict). Vitest for unit tests. Deployed to GitHub Pages via a GitHub Actions workflow.

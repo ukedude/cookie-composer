@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { drawFrame, type Config } from './scene'
 
 const CANVAS_SIZE = 480
-const BACKGROUND = '#faf6ee'
+const BACKGROUND = '#f2e8d4'
 
 function useSamplePaper(): HTMLImageElement | null {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -29,7 +29,7 @@ function App() {
     const config: Config = {
       message: 'You are capable of wonderful things.',
       paper,
-      slipColor: '#fdf8ef',
+      slipColor: '#ffffff',
       inkColor: '#3a2e22',
       fontFamily: "Georgia, 'Times New Roman', serif",
       background: BACKGROUND,
