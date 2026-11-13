@@ -1,4 +1,4 @@
-import { PAPER_MANIFEST } from '../papers'
+import { isCustomPaperId, PAPER_MANIFEST } from '../papers'
 import {
   INITIAL_STATE,
   INK_COLORS,
@@ -19,7 +19,10 @@ export function loadComposerSettings(): Partial<ComposerState> | null {
     if (typeof parsed.message === 'string') {
       result.message = parsed.message.slice(0, MESSAGE_MAX_LENGTH)
     }
-    if (typeof parsed.paperId === 'string' && PAPER_MANIFEST.some((p) => p.id === parsed.paperId)) {
+    if (
+      typeof parsed.paperId === 'string' &&
+      (PAPER_MANIFEST.some((p) => p.id === parsed.paperId) || isCustomPaperId(parsed.paperId))
+    ) {
       result.paperId = parsed.paperId
     }
     if (typeof parsed.slipColor === 'string' && SLIP_COLORS.some((c) => c.hex === parsed.slipColor)) {

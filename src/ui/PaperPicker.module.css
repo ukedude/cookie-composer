@@ -1,3 +1,30 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerLabel {
+  font-size: 0.85rem;
+  color: #6b6253;
+}
+
+.editToggle {
+  border: none;
+  background: none;
+  color: #8a6a3f;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+}
+
 .row {
   display: flex;
   gap: 0.75rem;
@@ -5,6 +32,37 @@
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x proximity;
   padding: 0.25rem 0.1rem 0.5rem;
+}
+
+.tileWrap {
+  position: relative;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.deleteBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #c9bfae;
+  background: #a33b3b;
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.warning {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b6253;
 }
 
 .tile {
@@ -44,8 +102,12 @@
   border-radius: 50%;
   border: 2px dashed #b8ad99;
   background: none;
-  color: #b8ad99;
+  color: #8a6a3f;
   font-size: 1.5rem;
-  cursor: default;
+  cursor: pointer;
   box-sizing: border-box;
+}
+
+.addTile:hover {
+  border-color: #8a6a3f;
 }

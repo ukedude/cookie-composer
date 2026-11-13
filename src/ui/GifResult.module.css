@@ -43,6 +43,15 @@
   text-align: center;
 }
 
+.notice {
+  width: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b6253;
+  text-align: center;
+  box-sizing: border-box;
+}
+
 .adjustments {
   width: 100%;
   margin: 0;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { DEFAULT_PAPER_ID, isCustomPaperId } from '../papers'
 import type { Config } from '../scene'
 import { exportGif, type ExportPhase } from '../export'
 import { ColorSwatchGroup } from './ColorSwatchGroup'
@@ -10,6 +11,7 @@ import {
   type ComposerState,
 } from './composerState'
 import { initComposerState, saveComposerSettings } from './composerStorage'
+import { hasShownExportNotice, markExportNoticeShown } from './customPaperExportNotice'
 import { GifResult } from './GifResult'
 import { InstallHint } from './InstallHint'
 import { MessageInput } from './MessageInput'
@@ -37,6 +39,7 @@ interface CompletedExport {
   size: number
   maxColors: number
   adjustments: string[]
+  showCustomPaperNotice: boolean
 }
 
 function toProgressProps(phase: ExportPhase): { label: string; value?: number; max?: number } {
@@ -55,7 +58,9 @@ function toProgressProps(phase: ExportPhase): { label: string; value?: number; m
 export function Composer() {
   const [state, dispatch] = useReducer(composerReducer, undefined, initComposerState)
   const [isMessageFocused, setIsMessageFocused] = useState(false)
-  const paperImage = usePaperImage(state.paperId)
+  const paperImage = usePaperImage(state.paperId, (missingId) => {
+    if (missingId === state.paperId) dispatch({ type: 'paper/select', paperId: DEFAULT_PAPER_ID })
+  })
   const [previewConfig, setPreviewConfig] = useState<Config | null>(null)
 
   const [exportStatus, setExportStatus] = useState<ExportStatus>('idle')
@@ -92,11 +97,15 @@ export function Composer() {
     setExportStatus({ phase: 'preparing' })
     try {
       // Capture from previewConfig, not state — it's the config Preview is currently showing;
-      // re-deriving from state would race ahead of what the user can see.
+      // re-deriving from state would race ahead of what the user can see. The paper id used for
+      // the notice-once bookkeeping below is captured here too, for the same reason.
+      const usedPaperId = state.paperId
       const result = await exportGif(previewConfig, setExportStatus)
       if (exportUrlRef.current) URL.revokeObjectURL(exportUrlRef.current)
       const url = URL.createObjectURL(result.blob)
       exportUrlRef.current = url
+      const showCustomPaperNotice = isCustomPaperId(usedPaperId) && !hasShownExportNotice(usedPaperId)
+      if (isCustomPaperId(usedPaperId)) markExportNoticeShown(usedPaperId)
       setExportResult({
         blob: result.blob,
         url,
@@ -105,13 +114,14 @@ export function Composer() {
         size: result.size,
         maxColors: result.maxColors,
         adjustments: result.adjustments,
+        showCustomPaperNotice,
       })
       setExportStatus('done')
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'GIF export failed.')
       setExportStatus('error')
     }
-  }, [previewConfig])
+  }, [previewConfig, state.paperId])
 
   const handlePlayAgain = useCallback(() => {
     setExportResult((current) => {
@@ -153,6 +163,7 @@ export function Composer() {
             size={exportResult.size}
             maxColors={exportResult.maxColors}
             adjustments={exportResult.adjustments}
+            showCustomPaperNotice={exportResult.showCustomPaperNotice}
             onPlayAgain={handlePlayAgain}
             onMakeAnother={handleMakeAnother}
           />

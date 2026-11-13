@@ -1,0 +1,106 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 30;
+  box-sizing: border-box;
+}
+
+.panel {
+  width: 100%;
+  max-width: 360px;
+  background: #fffdf8;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #3a2e22;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.viewport {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a1a;
+  touch-action: none;
+}
+
+.canvas {
+  display: block;
+  touch-action: none;
+}
+
+.mask {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.zoomSlider {
+  width: 100%;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #6b6253;
+  align-self: flex-start;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.secondary {
+  flex: 1 1 auto;
+  min-height: 44px;
+  border-radius: 999px;
+  border: 1px solid #c9bfae;
+  background: #fffdf8;
+  color: #3a2e22;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.primary {
+  flex: 1 1 auto;
+  min-height: 44px;
+  border-radius: 999px;
+  border: none;
+  background: #8a6a3f;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  background: #c9bfae;
+  cursor: not-allowed;
+}

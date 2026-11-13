@@ -73,6 +73,15 @@ describe('composerStorage', () => {
     expect(result).toEqual({ message: 'hi', inkColor: '#7A1E1E' })
   })
 
+  it('keeps a custom: prefixed paperId instead of dropping it', () => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ message: 'hi', paperId: 'custom:abc123' }),
+    )
+    const result = loadComposerSettings()
+    expect(result).toEqual({ message: 'hi', paperId: 'custom:abc123' })
+  })
+
   it('initComposerState falls back to defaults with nothing saved', () => {
     expect(initComposerState()).toEqual({ ...INITIAL_STATE, paperId: DEFAULT_PAPER_ID })
   })

@@ -11,6 +11,7 @@ interface GifResultProps {
   size: number
   maxColors: number
   adjustments: string[]
+  showCustomPaperNotice: boolean
   onPlayAgain: () => void
   onMakeAnother: () => void
 }
@@ -30,6 +31,7 @@ export function GifResult({
   size,
   maxColors,
   adjustments,
+  showCustomPaperNotice,
   onPlayAgain,
   onMakeAnother,
 }: GifResultProps) {
@@ -69,6 +71,12 @@ export function GifResult({
       <p className={styles.meta}>
         {formatBytes(byteLength)} · {fps}fps · {size}×{size}px · {maxColors} colors
       </p>
+      {showCustomPaperNotice && (
+        <p className={styles.notice}>
+          This GIF is {formatBytes(byteLength)} — photos you add often have more fine detail than
+          the built-in papers, which can push size closer to the 1 MB limit.
+        </p>
+      )}
       {adjustments.length > 0 && (
         <ul className={styles.adjustments}>
           {adjustments.map((note) => (
