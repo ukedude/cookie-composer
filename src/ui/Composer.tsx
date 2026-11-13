@@ -1,5 +1,6 @@
-import { useEffect, useReducer, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import type { Config } from '../scene'
+import { exportGif, type ExportPhase } from '../export'
 import { ColorSwatchGroup } from './ColorSwatchGroup'
 import {
   composerReducer,
@@ -9,8 +10,10 @@ import {
   type ComposerState,
 } from './composerState'
 import { initComposerState, saveComposerSettings } from './composerStorage'
+import { GifResult } from './GifResult'
 import { MessageInput } from './MessageInput'
 import { PaperPicker } from './PaperPicker'
+import { ProgressBar } from './ProgressBar'
 import styles from './Composer.module.css'
 import { Preview } from './Preview'
 import { usePaperImage } from './usePaperImage'
@@ -22,11 +25,42 @@ const BACKGROUND = '#f2e8d4'
 const FONT_FAMILY = "Georgia, 'Times New Roman', serif"
 const DEBOUNCE_MS = 150
 
+type ExportStatus = 'idle' | 'done' | 'error' | ExportPhase
+
+interface CompletedExport {
+  blob: Blob
+  url: string
+  byteLength: number
+  fps: number
+  size: number
+  maxColors: number
+  adjustments: string[]
+}
+
+function toProgressProps(phase: ExportPhase): { label: string; value?: number; max?: number } {
+  switch (phase.phase) {
+    case 'preparing':
+      return { label: 'Preparing…' }
+    case 'capturing':
+      return { label: 'Capturing frames…' }
+    case 'encoding':
+      return { label: 'Encoding…', value: phase.frameIndex, max: phase.totalFrames }
+    case 'retrying':
+      return { label: phase.reason || 'Retrying at a smaller size…' }
+  }
+}
+
 export function Composer() {
   const [state, dispatch] = useReducer(composerReducer, undefined, initComposerState)
   const [isMessageFocused, setIsMessageFocused] = useState(false)
   const paperImage = usePaperImage(state.paperId)
   const [previewConfig, setPreviewConfig] = useState<Config | null>(null)
+
+  const [exportStatus, setExportStatus] = useState<ExportStatus>('idle')
+  const [exportResult, setExportResult] = useState<CompletedExport | null>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
+  const exportUrlRef = useRef<string | null>(null)
+  const isExporting = typeof exportStatus === 'object'
 
   useEffect(() => {
     if (!paperImage) return
@@ -43,6 +77,59 @@ export function Composer() {
     }, DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [state, paperImage])
+
+  useEffect(() => {
+    return () => {
+      if (exportUrlRef.current) URL.revokeObjectURL(exportUrlRef.current)
+    }
+  }, [])
+
+  const handleCreateGif = useCallback(async () => {
+    if (!previewConfig) return
+    setExportError(null)
+    setExportStatus({ phase: 'preparing' })
+    try {
+      // Capture from previewConfig, not state — it's the config Preview is currently showing;
+      // re-deriving from state would race ahead of what the user can see.
+      const result = await exportGif(previewConfig, setExportStatus)
+      if (exportUrlRef.current) URL.revokeObjectURL(exportUrlRef.current)
+      const url = URL.createObjectURL(result.blob)
+      exportUrlRef.current = url
+      setExportResult({
+        blob: result.blob,
+        url,
+        byteLength: result.byteLength,
+        fps: result.fps,
+        size: result.size,
+        maxColors: result.maxColors,
+        adjustments: result.adjustments,
+      })
+      setExportStatus('done')
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'GIF export failed.')
+      setExportStatus('error')
+    }
+  }, [previewConfig])
+
+  const handlePlayAgain = useCallback(() => {
+    setExportResult((current) => {
+      if (!current) return current
+      if (exportUrlRef.current) URL.revokeObjectURL(exportUrlRef.current)
+      const url = URL.createObjectURL(current.blob)
+      exportUrlRef.current = url
+      return { ...current, url }
+    })
+  }, [])
+
+  const handleMakeAnother = useCallback(() => {
+    if (exportUrlRef.current) {
+      URL.revokeObjectURL(exportUrlRef.current)
+      exportUrlRef.current = null
+    }
+    setExportResult(null)
+    setExportError(null)
+    setExportStatus('idle')
+  }, [])
 
   return (
     <div className={styles.composer}>
@@ -78,9 +165,31 @@ export function Composer() {
         onSelect={(color) => dispatch({ type: 'inkColor/select', color })}
       />
 
-      <button type="button" className={styles.cta} disabled>
+      <button
+        type="button"
+        className={styles.cta}
+        disabled={!previewConfig || isExporting}
+        onClick={handleCreateGif}
+      >
         Create GIF
       </button>
+
+      {typeof exportStatus === 'object' && <ProgressBar {...toProgressProps(exportStatus)} />}
+
+      {exportStatus === 'error' && exportError && <p className={styles.error}>{exportError}</p>}
+
+      {exportStatus === 'done' && exportResult && (
+        <GifResult
+          url={exportResult.url}
+          byteLength={exportResult.byteLength}
+          fps={exportResult.fps}
+          size={exportResult.size}
+          maxColors={exportResult.maxColors}
+          adjustments={exportResult.adjustments}
+          onPlayAgain={handlePlayAgain}
+          onMakeAnother={handleMakeAnother}
+        />
+      )}
     </div>
   )
 }

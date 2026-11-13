@@ -39,3 +39,9 @@
   color: #fff;
   cursor: not-allowed;
 }
+
+.error {
+  color: #a33b3b;
+  font-size: 0.9rem;
+  margin: 0;
+}

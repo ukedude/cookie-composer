@@ -1,1 +1,1 @@
-// Frame capture, GIF worker, and share/download helpers live here.
+export { exportGif, type ExportPhase, type ExportResult } from './exportGif'

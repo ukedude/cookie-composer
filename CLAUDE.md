@@ -47,7 +47,7 @@ public/papers/  starter paper images (square JPGs, 1024 px)
 - [x] Phase 1 Static scene
 - [x] Phase 2 Animation
 - [x] Phase 3 Composer UI
-- [ ] Phase 4 GIF export
+- [x] Phase 4 GIF export
 - [ ] Phase 5 Share + PWA
 - [ ] Phase 6 Paper library
 - [ ] Phase 7 Polish
