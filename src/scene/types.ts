@@ -8,16 +8,19 @@ export interface Config {
 }
 
 export interface Pose {
-  /** Whole-scene tilt, radians. */
+  /** Whole-scene tilt, radians. Nonzero only during the closed-wobble/unfold handoff. */
   sceneRotation: number
-  paperOpacity: number
   /** Horizontal hinge: bottom half vs top half. 0..PI. */
   fold1: number
   /** Vertical hinge: right half vs left half. 0..PI. */
   fold2: number
+  /** Slip's grip point (its left-edge vertical midpoint), x, radius-normalized. */
+  gripX: number
+  /** Slip's grip point y, radius-normalized. */
+  gripY: number
+  /** Slip's rotation about the grip point, radians, ctx.rotate convention. */
+  slipAngle: number
   slipScale: number
-  slipOpacity: number
-  /** 1 = slip's bottom edge rests on the fold1 crease (tucked in the fold); 0 = centered on canvas. */
-  slipLift: number
-  textOpacity: number
+  /** Paint order: 'inside' sits between the back half and the front flap; 'front' is painted last. */
+  slipLayer: 'inside' | 'front'
 }

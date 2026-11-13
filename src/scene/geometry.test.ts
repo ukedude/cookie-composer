@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { clamp01, coverFitSource, lerp } from './geometry'
+import {
+  clamp01,
+  coverFitSource,
+  lerp,
+  SLIP_HEIGHT_FACTOR,
+  slipBoundingBoxMaxY,
+} from './geometry'
 
 describe('lerp', () => {
   it('interpolates linearly', () => {
@@ -41,5 +47,23 @@ describe('coverFitSource', () => {
     expect(rect.sh).toBeCloseTo(100)
     expect(rect.sx).toBeCloseTo(0)
     expect(rect.sy).toBeCloseTo(0)
+  })
+})
+
+describe('slipBoundingBoxMaxY', () => {
+  it('reduces to the bottom edge when unrotated', () => {
+    expect(slipBoundingBoxMaxY(-0.2, 0, 1)).toBeCloseTo(-0.2 + SLIP_HEIGHT_FACTOR)
+  })
+
+  it('swings the far end down to the slip length when standing up at 90deg', () => {
+    const gripY = -1
+    const maxY = slipBoundingBoxMaxY(gripY, Math.PI / 2, 1)
+    expect(maxY).toBeCloseTo(gripY + 2 * 1.1) // length = 2 * SLIP_LENGTH_FACTOR * slipScale
+  })
+
+  it('scales with slipScale', () => {
+    const atScale1 = slipBoundingBoxMaxY(0, 0, 1)
+    const atScale2 = slipBoundingBoxMaxY(0, 0, 2)
+    expect(atScale2).toBeCloseTo(atScale1 * 2)
   })
 })

@@ -1,11 +1,13 @@
 /** Paper circle radius as a fraction of canvas size. */
-export const PAPER_RADIUS_FACTOR = 0.38
+export const PAPER_RADIUS_FACTOR = 0.32
 /** Slip length as a multiple of the paper's diameter (overhangs both straight edges when folded). */
 export const SLIP_LENGTH_FACTOR = 1.1
 /** Slip height as a multiple of the paper's diameter. */
-export const SLIP_HEIGHT_FACTOR = 0.16
-/** Target slip width at full reveal, as a fraction of canvas size. */
-export const SLIP_REVEAL_WIDTH_FACTOR = 0.8
+export const SLIP_HEIGHT_FACTOR = 0.2
+/** Target slip width at the end of the animation, as a fraction of canvas size. */
+export const FINAL_SLIP_WIDTH_FACTOR = 0.92
+/** Where the fold1 crease sits, as a fraction of canvas height (moved down to leave headroom above). */
+export const CREASE_Y_FACTOR = 0.62
 
 export function lerp(a: number, b: number, u: number): number {
   return a + (b - a) * u
@@ -118,23 +120,27 @@ export function flapBounds(flap: Flap, fold1: number, fold2: number, radius: num
   }
 }
 
-export interface SlipBounds {
-  halfLength: number
-  /** Top edge y (more negative), in the paper's folded coordinate space. */
-  top: number
-  /** Bottom edge y — sits exactly on the fold1 crease (y = 0) when slipLift = 1. */
-  bottom: number
-}
-
 /**
- * The slip's horizontal half-length and vertical extent for a given pose. At
- * slipLift = 1 the slip's bottom edge rests on the fold1 crease (y = 0) and its
- * body extends upward into the top half; at slipLift = 0 it's centered on y = 0.
+ * The lowest point (max y) of the slip's rotated bounding box, in radius-normalized units.
+ * The slip is a rect anchored at the grip point (its left-edge vertical midpoint, at local
+ * origin), extending along local +x to `2 * SLIP_LENGTH_FACTOR * slipScale`, with half-height
+ * `SLIP_HEIGHT_FACTOR * slipScale`, rotated by `slipAngle` about the grip and translated to
+ * (gripX, gripY). All four corners are checked since rotation can make any of them the lowest.
  */
-export function slipBounds(radius: number, slipScale: number, slipLift: number): SlipBounds {
-  const diameter = radius * 2
-  const halfLength = (SLIP_LENGTH_FACTOR * diameter * slipScale) / 2
-  const height = SLIP_HEIGHT_FACTOR * diameter * slipScale
-  const bottom = lerp(height / 2, 0, slipLift)
-  return { halfLength, top: bottom - height, bottom }
+export function slipBoundingBoxMaxY(
+  gripY: number,
+  slipAngle: number,
+  slipScale: number,
+): number {
+  const length = 2 * SLIP_LENGTH_FACTOR * slipScale
+  const halfHeight = SLIP_HEIGHT_FACTOR * slipScale
+  const cos = Math.cos(slipAngle)
+  const sin = Math.sin(slipAngle)
+  const corners = [
+    [0, -halfHeight],
+    [length, -halfHeight],
+    [length, halfHeight],
+    [0, halfHeight],
+  ] as const
+  return Math.max(...corners.map(([x, y]) => gripY + x * sin + y * cos))
 }

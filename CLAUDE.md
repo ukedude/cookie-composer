@@ -5,6 +5,17 @@ A static, client-only web app that lets Jennifer create an animated "kindness fo
 ## The physical object we are imitating
 A 4-5 inch circle of decorative paper is folded in half. A rectangular paper slip with a kind message sits in the crease, sticking out slightly at both ends. The half circle is folded in half again to look like a fortune cookie. The recipient unfolds it and pulls out the slip.
 
+## Motion (Phase 2)
+Mimics pulling the fortune out of a real paper cookie, timed in seconds via `src/scene/timeline.ts` (`MOTION_SECONDS=3.9`, `HOLD_SECONDS=4` for the GIF's final-frame delay):
+1. 0.0-0.5s closed quarter-disc, gentle idle wobble that decays to nothing by the handoff.
+2. 0.5-1.3s fold2 opens (quarter → half circle).
+3. 1.3-1.7s front flap tips forward ~22°, revealing a shadowed sliver of the back half.
+4. 1.7-2.0s slip peels up at its left end (the grip) while its right end stays pinned to the crease.
+5. 2.0-2.5s slip rises at a constant tilt until clear of the whole cookie, then latches onto the frontmost paint layer.
+6. 2.5-2.8s slip levels off (tilt back to 0).
+7. 2.8-3.9s slip descends, grows, and settles into its final centered pose in one eased motion.
+Text is drawn on the slip the whole time it's visible (once the halves are coincident) and stays glued to it through every transform.
+
 ## Hard rules
 - No backend, no accounts, no analytics, no external API calls. Everything runs in the browser.
 - Must work in iPhone Safari first (Jennifer uses an iPhone), then Android Chrome and desktop browsers.
@@ -27,13 +38,14 @@ public/papers/  starter paper images (square JPGs, 1024 px)
 
 ## Conventions
 - Config type: { message: string; paper: ImageBitmap | HTMLImageElement; slipColor: string; inkColor: string; fontFamily: string; background: string }
+- Pose (internal to src/scene/pose.ts) carries gripX/gripY/slipAngle/slipScale/slipLayer for the slip, plus sceneRotation/fold1/fold2 — no paperOpacity/textOpacity/slipOpacity, since paper and text are always fully opaque.
 - Storyboard timings live in one constant in src/scene/timeline.ts.
 - Every phase ends with: typecheck passes, tests pass, Progress section below updated.
 
 ## Progress
 - [x] Phase 0 Scaffold
 - [x] Phase 1 Static scene
-- [ ] Phase 2 Animation
+- [x] Phase 2 Animation
 - [ ] Phase 3 Composer UI
 - [ ] Phase 4 GIF export
 - [ ] Phase 5 Share + PWA

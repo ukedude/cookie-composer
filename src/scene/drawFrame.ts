@@ -4,15 +4,18 @@ import {
   buildQuarterDiscPath,
   clamp01,
   coverFitSource,
+  CREASE_Y_FACTOR,
   isFlapBackSide,
   PAPER_RADIUS_FACTOR,
-  slipBounds,
+  SLIP_HEIGHT_FACTOR,
+  SLIP_LENGTH_FACTOR,
   type Flap,
 } from './geometry'
 import { fitText, type MeasureFn } from './text'
 
 const SHADOW_COLOR = 'rgba(0, 0, 0, 0.3)'
 const BACK_SIDE_DARKEN = 'rgba(0, 0, 0, 0.1)'
+const GAP_SHADOW_COLOR = 'rgba(0, 0, 0, 0.25)'
 const SLIP_CORNER_RATIO = 0.3
 const SLIP_SHADOW_COLOR = 'rgba(0, 0, 0, 0.18)'
 const SLIP_SHADOW_BLUR = 8
@@ -32,14 +35,10 @@ export function drawFrame(ctx: CanvasRenderingContext2D, t: number, config: Conf
   ctx.fillStyle = config.background
   ctx.fillRect(0, 0, size, size)
 
-  ctx.translate(size / 2, size / 2)
+  ctx.translate(size / 2, size * CREASE_Y_FACTOR)
   ctx.rotate(pose.sceneRotation)
 
   drawFoldedPaper(ctx, pose, config, radius)
-
-  if (pose.textOpacity > 0) {
-    drawRevealedText(ctx, pose, config, radius)
-  }
 
   ctx.restore()
 }
@@ -55,7 +54,6 @@ function drawFoldedPaper(
   const bottomFoldedOverTop = Math.cos(pose.fold1) < 0
 
   const paintTop = (side: Side) => {
-    if (pose.paperOpacity <= 0) return
     const flap: Flap = side === 'left' ? 'top-left' : 'top-right'
     ctx.save()
     if (side === 'right') ctx.scale(Math.cos(pose.fold2), 1)
@@ -63,7 +61,6 @@ function drawFoldedPaper(
     ctx.restore()
   }
   const paintBottom = (side: Side) => {
-    if (pose.paperOpacity <= 0) return
     const flap: Flap = side === 'left' ? 'bottom-left' : 'bottom-right'
     ctx.save()
     if (side === 'right') ctx.scale(Math.cos(pose.fold2), 1)
@@ -71,45 +68,58 @@ function drawFoldedPaper(
     drawFlap(ctx, flap, pose, config, radius, paperRect)
     ctx.restore()
   }
-  // Whenever the two halves are coincident (fold2 === 0, i.e. not mid-fold along
-  // the vertical hinge), draw the slip as one shape so it casts a single shadow
-  // with no seam down the middle; otherwise each side's half is drawn separately.
-  const paintSlip = () => {
-    if (pose.slipOpacity <= 0) return
-    if (pose.fold2 === 0) {
-      drawFullSlip(ctx, pose, config, radius)
-      return
-    }
-    drawSlipHalf(ctx, 'left', pose, config, radius)
-    ctx.save()
-    ctx.scale(Math.cos(pose.fold2), 1)
-    drawSlipHalf(ctx, 'right', pose, config, radius)
-    ctx.restore()
-  }
+  const paintSlipNow = () => paintSlip(ctx, pose, config, radius)
 
-  // Tucking rule: once the bottom flaps have folded past vertical (toward the viewer),
-  // they land on top of the top flaps and the slip, hiding everything but the overhang.
+  // Tucking rule: once the bottom flaps have folded past vertical (toward the viewer), they land
+  // on top of the top flaps, hiding everything but the overhang — true for this whole storyboard
+  // since fold1 never returns past vertical once the front flap settles at its tipped angle.
   if (bottomFoldedOverTop) {
     paintTop('left')
     paintTop('right')
-    paintSlip()
+    drawGapShadow(ctx, pose, radius)
+    if (pose.slipLayer === 'inside') paintSlipNow()
     paintBottom('left')
     paintBottom('right')
+    if (pose.slipLayer === 'front') paintSlipNow()
   } else {
+    // Unreachable in this storyboard — kept for robustness if fold1 ever moves past vertical again.
     paintBottom('left')
     paintBottom('right')
     paintTop('left')
     paintTop('right')
-    paintSlip()
+    paintSlipNow()
   }
 
   drawCreaseLines(ctx, pose, radius)
 }
 
+/**
+ * As the front flap tips open (fold1 < PI), its covering extent shrinks, revealing a sliver of the
+ * top half that used to be fully hidden underneath it. This paints a soft shadow into that sliver
+ * so the opening reads as a gap, not a flat color seam. No-op once fully closed (fold1 >= PI).
+ */
+function drawGapShadow(ctx: CanvasRenderingContext2D, pose: Pose, radius: number): void {
+  if (pose.fold1 >= Math.PI) return
+
+  const gapTop = -radius
+  const gapBottom = radius * Math.cos(pose.fold1)
+
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(0, 0, radius, 0, Math.PI * 2)
+  ctx.clip()
+
+  const gradient = ctx.createLinearGradient(0, gapTop, 0, gapBottom)
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
+  gradient.addColorStop(1, GAP_SHADOW_COLOR)
+  ctx.fillStyle = gradient
+  ctx.fillRect(-radius, gapTop, radius * 2, gapBottom - gapTop)
+  ctx.restore()
+}
+
 /** Faint crease where a hinge has flattened — fades in as that fold angle approaches 0. */
 function drawCreaseLines(ctx: CanvasRenderingContext2D, pose: Pose, radius: number): void {
-  const creaseAlpha = (fold: number) =>
-    clamp01(1 - fold / (Math.PI / 2)) * 0.12 * pose.paperOpacity
+  const creaseAlpha = (fold: number) => clamp01(1 - fold / (Math.PI / 2)) * 0.12
 
   const vAlpha = creaseAlpha(pose.fold2)
   if (vAlpha > 0) {
@@ -139,7 +149,6 @@ function drawFlap(
   paperRect: ReturnType<typeof coverFitSource>,
 ): void {
   ctx.save()
-  ctx.globalAlpha *= pose.paperOpacity
   ctx.shadowColor = SHADOW_COLOR
   ctx.shadowBlur = radius * 0.2
   ctx.shadowOffsetY = radius * 0.1
@@ -177,6 +186,23 @@ function drawFlap(
   ctx.restore()
 }
 
+/** Dispatches to the two-half split render (while fold2 still separates left/right) or the single
+ * grip-rotated piece (once the halves are coincident). */
+function paintSlip(ctx: CanvasRenderingContext2D, pose: Pose, config: Config, radius: number): void {
+  if (pose.fold2 === 0) {
+    drawGrippedSlip(ctx, pose, config, radius)
+    return
+  }
+  drawSlipHalf(ctx, 'left', pose, config, radius)
+  ctx.save()
+  ctx.scale(Math.cos(pose.fold2), 1)
+  drawSlipHalf(ctx, 'right', pose, config, radius)
+  ctx.restore()
+}
+
+/** Half-slip extents while the slip still rests flat in the crease (slipAngle is always 0 here,
+ * so no rotation is needed — the fold2 scale-about-the-paper-center transform wouldn't commute
+ * with a grip-relative rotation anyway). */
 function drawSlipHalf(
   ctx: CanvasRenderingContext2D,
   side: Side,
@@ -184,27 +210,39 @@ function drawSlipHalf(
   config: Config,
   radius: number,
 ): void {
-  const { halfLength, top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
+  const halfLength = SLIP_LENGTH_FACTOR * radius * pose.slipScale
+  const halfHeight = SLIP_HEIGHT_FACTOR * radius * pose.slipScale
+  const centerY = pose.gripY * radius
+  const top = centerY - halfHeight
+  const bottom = centerY + halfHeight
   const x0 = side === 'left' ? -halfLength : 0
   const x1 = side === 'left' ? 0 : halfLength
-  const roundedEnd: Side = side
-  paintSlipPath(ctx, pose, config, buildHalfSlipPath(x0, x1, top, bottom, roundedEnd))
+  paintSlipPath(ctx, config, buildHalfSlipPath(x0, x1, top, bottom, side))
 }
 
-/** The slip once both halves are coincident (fold2 === 0) — one shape, one shadow, no seam. */
-function drawFullSlip(
+/** The slip once both halves are coincident (fold2 === 0) and may be tilted — one piece, rotated
+ * about its grip point (the left-edge vertical midpoint), with the message glued to it. */
+function drawGrippedSlip(
   ctx: CanvasRenderingContext2D,
   pose: Pose,
   config: Config,
   radius: number,
 ): void {
-  const { halfLength, top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
-  paintSlipPath(ctx, pose, config, buildFullSlipPath(halfLength, top, bottom))
+  const length = 2 * SLIP_LENGTH_FACTOR * radius * pose.slipScale
+  const height = 2 * SLIP_HEIGHT_FACTOR * radius * pose.slipScale
+
+  ctx.save()
+  ctx.translate(pose.gripX * radius, pose.gripY * radius)
+  ctx.rotate(pose.slipAngle)
+
+  paintSlipPath(ctx, config, buildGripSlipPath(length, height))
+  drawSlipText(ctx, config, length, height)
+
+  ctx.restore()
 }
 
-function paintSlipPath(ctx: CanvasRenderingContext2D, pose: Pose, config: Config, path: Path2D): void {
+function paintSlipPath(ctx: CanvasRenderingContext2D, config: Config, path: Path2D): void {
   ctx.save()
-  ctx.globalAlpha *= pose.slipOpacity
 
   ctx.shadowColor = SLIP_SHADOW_COLOR
   ctx.shadowBlur = SLIP_SHADOW_BLUR
@@ -256,12 +294,16 @@ function buildHalfSlipPath(
   return path
 }
 
-/** Full rounded-rect slip outline, used once the two halves are coincident. */
-function buildFullSlipPath(halfLength: number, y0: number, y1: number): Path2D {
-  const x0 = -halfLength
-  const x1 = halfLength
-  const height = y1 - y0
-  const cornerRadius = Math.min(height * SLIP_CORNER_RATIO, halfLength)
+/**
+ * Full rounded-rect slip outline in grip-local coordinates: the grip (rotation pivot) sits at the
+ * left-edge vertical midpoint, local origin — x spans [0, length], not symmetric about x=0.
+ */
+function buildGripSlipPath(length: number, height: number): Path2D {
+  const x0 = 0
+  const x1 = length
+  const y0 = -height / 2
+  const y1 = height / 2
+  const cornerRadius = Math.min(height * SLIP_CORNER_RATIO, length / 2)
   const path = new Path2D()
 
   path.moveTo(x0 + cornerRadius, y0)
@@ -277,16 +319,13 @@ function buildFullSlipPath(halfLength: number, y0: number, y1: number): Path2D {
   return path
 }
 
-function drawRevealedText(
-  ctx: CanvasRenderingContext2D,
-  pose: Pose,
-  config: Config,
-  radius: number,
-): void {
-  const { halfLength, top, bottom } = slipBounds(radius, pose.slipScale, pose.slipLift)
-  const height = bottom - top
-  const centerY = (top + bottom) / 2
-  const maxWidth = halfLength * 2 * 0.85
+/** Draws the message centered on the slip. Called with ctx already translated+rotated to the
+ * slip's grip frame, so this only needs one more translate to reach the rect's center. */
+function drawSlipText(ctx: CanvasRenderingContext2D, config: Config, length: number, height: number): void {
+  ctx.save()
+  ctx.translate(length / 2, 0)
+
+  const maxWidth = length * 0.85
   const maxHeight = height * 0.8
 
   const measure: MeasureFn = (text, fontPx, fontFamily) => {
@@ -300,19 +339,16 @@ function drawRevealedText(
     measure,
   )
 
-  ctx.save()
-  ctx.globalAlpha *= pose.textOpacity
   ctx.fillStyle = config.inkColor
   ctx.font = `${fontSize}px ${config.fontFamily}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
   const lineHeight = fontSize * 1.25
-  const startY = centerY - ((lines.length - 1) * lineHeight) / 2
+  const startY = -((lines.length - 1) * lineHeight) / 2
   lines.forEach((line, i) => {
     ctx.fillText(line, 0, startY + i * lineHeight)
   })
 
   ctx.restore()
 }
-
