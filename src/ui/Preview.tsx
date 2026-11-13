@@ -6,6 +6,11 @@ interface PreviewProps {
   /** null while the paper image is still loading — the canvas renders regardless, just undrawn. */
   config: Config | null
   size: number
+  /** Starting value for t (0..1). Defaults to 0, matching the original closed-cookie start. */
+  initialT?: number
+  /** Change this value to snap the preview back to the settled frame (t=1) while idle — used by
+   * Composer so an edit always shows its result. Ignored on mount and while playing. */
+  showEndKey?: unknown
 }
 
 function isDebugMode(): boolean {
@@ -15,18 +20,27 @@ function isDebugMode(): boolean {
 
 /** Live preview: owns the canvas, requestAnimationFrame playback, and the scrub bar. Both this and
  * the (future) GIF exporter call the same pure drawFrame, so they always match. */
-export function Preview({ config, size }: PreviewProps) {
+export function Preview({ config, size, initialT = 0, showEndKey }: PreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [t, setT] = useState(0)
+  const [t, setT] = useState(initialT)
   const [playing, setPlaying] = useState(false)
   const rafRef = useRef<number | null>(null)
   const playStartTRef = useRef(0)
+  const hasMountedRef = useRef(false)
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext('2d')
     if (!ctx || !config) return
     drawFrame(ctx, t, config)
   }, [t, config])
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+    if (!playing) setT(1)
+  }, [showEndKey])
 
   useEffect(() => {
     if (!playing) return

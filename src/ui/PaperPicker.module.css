@@ -1,0 +1,51 @@
+.row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  padding: 0.25rem 0.1rem 0.5rem;
+}
+
+.tile {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: 56px;
+  height: 56px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.tile[aria-pressed='true'] {
+  border-color: #8a6a3f;
+}
+
+.thumb {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.addTile {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  width: 56px;
+  height: 56px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  border: 2px dashed #b8ad99;
+  background: none;
+  color: #b8ad99;
+  font-size: 1.5rem;
+  cursor: default;
+  box-sizing: border-box;
+}

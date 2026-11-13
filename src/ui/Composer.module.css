@@ -1,0 +1,41 @@
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.previewWrap {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f2e8d4;
+  padding-bottom: 0.5rem;
+}
+
+.previewWrap.compact canvas {
+  max-width: 40vh;
+  margin: 0 auto;
+}
+
+.cta {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 8px;
+  border: none;
+  background: #8a6a3f;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cta:disabled {
+  background: #c9bfae;
+  color: #fff;
+  cursor: not-allowed;
+}

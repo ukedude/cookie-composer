@@ -134,7 +134,7 @@ export function fitText(
     maxHeight,
     fontFamily,
     maxLines = 3,
-    minFontSize = 10,
+    minFontSize = 16,
     maxFontSize = 28,
     lineHeightRatio = 1.25,
   } = options
