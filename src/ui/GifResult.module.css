@@ -12,6 +12,30 @@
   border-radius: 8px;
 }
 
+.primary {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 8px;
+  border: none;
+  background: #8a6a3f;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  background: #c9bfae;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #a33b3b;
+  font-size: 0.85rem;
+  margin: 0;
+  text-align: center;
+}
+
 .meta {
   font-size: 0.85rem;
   color: #6b6253;

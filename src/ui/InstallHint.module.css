@@ -1,0 +1,27 @@
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f6efdf;
+  border: 1px solid #c9bfae;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+
+.text {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b6253;
+}
+
+.dismiss {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: #6b6253;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+}

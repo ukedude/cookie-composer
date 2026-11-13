@@ -11,9 +11,11 @@ import {
 } from './composerState'
 import { initComposerState, saveComposerSettings } from './composerStorage'
 import { GifResult } from './GifResult'
+import { InstallHint } from './InstallHint'
 import { MessageInput } from './MessageInput'
 import { PaperPicker } from './PaperPicker'
 import { ProgressBar } from './ProgressBar'
+import { UpdateBanner } from './UpdateBanner'
 import styles from './Composer.module.css'
 import { Preview } from './Preview'
 import { usePaperImage } from './usePaperImage'
@@ -138,10 +140,14 @@ export function Composer() {
 
   return (
     <div className={styles.composer}>
+      <UpdateBanner />
+      <InstallHint />
       <div className={`${styles.previewWrap} ${isCompact ? styles.compact : ''}`}>
         {showResult && exportResult ? (
           <GifResult
             url={exportResult.url}
+            blob={exportResult.blob}
+            message={state.message}
             byteLength={exportResult.byteLength}
             fps={exportResult.fps}
             size={exportResult.size}

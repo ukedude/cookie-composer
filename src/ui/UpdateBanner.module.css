@@ -1,0 +1,12 @@
+.banner {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: #3a2e22;
+  color: #fffdf8;
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  box-sizing: border-box;
+}
