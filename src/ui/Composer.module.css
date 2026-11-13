@@ -10,6 +10,12 @@
 }
 
 .previewWrap {
+  width: 100%;
+}
+
+/* Sticky + shrunk only while the message textarea is focused (keyboard open) — the only time
+   pinning the preview in place is actually useful. At rest it scrolls with the page. */
+.previewWrap.compact {
   position: sticky;
   top: 0;
   z-index: 1;

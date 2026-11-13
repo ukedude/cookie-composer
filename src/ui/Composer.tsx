@@ -131,10 +131,28 @@ export function Composer() {
     setExportStatus('idle')
   }, [])
 
+  const showResult = exportStatus === 'done' && exportResult !== null
+  // Sticky/shrunk "compact" mode is only for the keyboard-open case — never while a finished GIF
+  // is showing in the same slot, so nothing stays pinned or overlaps once a result is up.
+  const isCompact = isMessageFocused && !showResult
+
   return (
     <div className={styles.composer}>
-      <div className={`${styles.previewWrap} ${isMessageFocused ? styles.compact : ''}`}>
-        <Preview config={previewConfig} size={CANVAS_SIZE} initialT={1} showEndKey={state} />
+      <div className={`${styles.previewWrap} ${isCompact ? styles.compact : ''}`}>
+        {showResult && exportResult ? (
+          <GifResult
+            url={exportResult.url}
+            byteLength={exportResult.byteLength}
+            fps={exportResult.fps}
+            size={exportResult.size}
+            maxColors={exportResult.maxColors}
+            adjustments={exportResult.adjustments}
+            onPlayAgain={handlePlayAgain}
+            onMakeAnother={handleMakeAnother}
+          />
+        ) : (
+          <Preview config={previewConfig} size={CANVAS_SIZE} initialT={1} showEndKey={state} />
+        )}
       </div>
 
       <MessageInput
@@ -177,19 +195,6 @@ export function Composer() {
       {typeof exportStatus === 'object' && <ProgressBar {...toProgressProps(exportStatus)} />}
 
       {exportStatus === 'error' && exportError && <p className={styles.error}>{exportError}</p>}
-
-      {exportStatus === 'done' && exportResult && (
-        <GifResult
-          url={exportResult.url}
-          byteLength={exportResult.byteLength}
-          fps={exportResult.fps}
-          size={exportResult.size}
-          maxColors={exportResult.maxColors}
-          adjustments={exportResult.adjustments}
-          onPlayAgain={handlePlayAgain}
-          onMakeAnother={handleMakeAnother}
-        />
-      )}
     </div>
   )
 }
