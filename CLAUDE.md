@@ -22,7 +22,8 @@ Text is drawn on the slip the whole time it's visible (once the halves are coinc
 - All animation is drawn by ONE pure function: drawFrame(ctx, t, config), where t runs 0..1. The preview and the GIF export both call it, so they always match.
 - Render on Canvas 2D. Do not use CSS 3D transforms for the cookie.
 - GIF target: 480x480, 15 fps, under 1 MB, final frame held about 4 s using the frame delay (not duplicate frames).
-- Ask before adding any dependency. Approved so far: react, react-dom, vite, typescript, gifenc, idb-keyval, vite-plugin-pwa.
+- MP4 export (secondary, for WhatsApp — it converts shared GIFs to video and drops the GIF-delay hold): 720x720, 30 fps, H.264 via WebCodecs/Mediabunny, target under 2 MB, the 4s hold written as real duplicate frames (not a delay trick). `mediabunny` is imported dynamically so it never lands in the main bundle. Built automatically in the background right after the GIF finishes (not on tap, since iOS only allows `navigator.share()` synchronously inside a tap), cancelled via a run id if superseded by "Make another" or a new GIF. Offered as a secondary "Share video" button once ready; hidden entirely with no error UI if the codec is unsupported or the build fails — the reason is always logged to the console and surfaced inline only behind `?debug=1`.
+- Ask before adding any dependency. Approved so far: react, react-dom, vite, typescript, gifenc, idb-keyval, vite-plugin-pwa, mediabunny.
 - Keep files small and focused. Prefer plain CSS modules over UI frameworks.
 - Paper is patterned on both sides; the slip is white with a shadow and thin border.
 
@@ -31,7 +32,7 @@ Vite + React (current version) + TypeScript (strict). Vitest for unit tests. Dep
 
 ## Layout
 src/scene/      drawFrame, geometry, easing, storyboard timings (no React here)
-src/export/     frame capture, GIF worker, share and download helpers
+src/export/     frame capture, GIF worker, MP4 (WebCodecs/Mediabunny, lazy-loaded) encode, share and download helpers
 src/papers/     bundled papers, upload + crop, IndexedDB storage
 src/ui/         React components (Composer, Preview, PaperPicker, MessageInput)
 public/papers/  starter paper images (square JPGs, 1024 px)

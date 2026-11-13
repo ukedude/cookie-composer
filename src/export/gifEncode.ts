@@ -1,4 +1,5 @@
 import { GIFEncoder, type GifPalette } from 'gifenc'
+import { yieldToEventLoop } from './yieldToEventLoop'
 
 export interface IndexedFrame {
   /** Palette-index-per-pixel, already diffed against the previous frame (frame 0 is the
@@ -18,10 +19,6 @@ export interface GifEncodeInput {
 }
 
 export type EncodeProgress = { phase: 'encoding'; frameIndex: number; totalFrames: number }
-
-function yieldToEventLoop(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0))
-}
 
 /**
  * DOM-free GIF bitstream writer, shared verbatim by the worker path and the main-thread fallback

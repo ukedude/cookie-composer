@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { shareOrDownloadGif } from '../export'
+import { shareOrDownloadGif, shareOrDownloadMp4 } from '../export'
+import { ProgressBar } from './ProgressBar'
 import styles from './GifResult.module.css'
 
 interface GifResultProps {
@@ -14,6 +15,10 @@ interface GifResultProps {
   showCustomPaperNotice: boolean
   onPlayAgain: () => void
   onMakeAnother: () => void
+  mp4Status: 'idle' | 'building' | 'ready' | 'unavailable'
+  mp4Blob: Blob | null
+  /** Diagnostics only — pass undefined to hide, even when mp4Status is 'unavailable'. */
+  mp4Reason?: string | null
 }
 
 function formatBytes(bytes: number): string {
@@ -34,10 +39,26 @@ export function GifResult({
   showCustomPaperNotice,
   onPlayAgain,
   onMakeAnother,
+  mp4Status,
+  mp4Blob,
+  mp4Reason,
 }: GifResultProps) {
   const [isSharing, setIsSharing] = useState(false)
   const [shareError, setShareError] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isMp4Sharing, setIsMp4Sharing] = useState(false)
+  const [mp4ShareError, setMp4ShareError] = useState(false)
+
+  function handleShareMp4() {
+    if (!mp4Blob) return
+    setMp4ShareError(false)
+    setIsMp4Sharing(true)
+    // Same no-await-before-the-call constraint as handleShare below — the video is already built
+    // by the time this button is enabled, so this stays inside the tap's user-activation window.
+    void shareOrDownloadMp4(mp4Blob)
+      .catch(() => setMp4ShareError(true))
+      .finally(() => setIsMp4Sharing(false))
+  }
 
   function handleShare() {
     setShareError(false)
@@ -68,6 +89,16 @@ export function GifResult({
         Share GIF
       </button>
       {shareError && <p className={styles.error}>Couldn't share — try again.</p>}
+      {mp4Status === 'building' && <ProgressBar label="Preparing video for WhatsApp…" />}
+      {mp4Status === 'ready' && mp4Blob && (
+        <button type="button" className={styles.secondary} disabled={isMp4Sharing} onClick={handleShareMp4}>
+          Share video (for WhatsApp)
+        </button>
+      )}
+      {mp4ShareError && <p className={styles.error}>Couldn't share the video — try again.</p>}
+      {mp4Status === 'unavailable' && mp4Reason && (
+        <p className={styles.notice}>Video unavailable: {mp4Reason}</p>
+      )}
       <p className={styles.meta}>
         {formatBytes(byteLength)} · {fps}fps · {size}×{size}px · {maxColors} colors
       </p>

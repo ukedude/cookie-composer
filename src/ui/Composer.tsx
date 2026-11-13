@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { DEFAULT_PAPER_ID, isCustomPaperId } from '../papers'
 import type { Config } from '../scene'
-import { exportGif, type ExportPhase } from '../export'
+import { exportGif, exportMp4, type ExportPhase } from '../export'
 import { ColorSwatchGroup } from './ColorSwatchGroup'
 import {
   composerReducer,
@@ -30,6 +30,7 @@ const FONT_FAMILY = "Georgia, 'Times New Roman', serif"
 const DEBOUNCE_MS = 150
 
 type ExportStatus = 'idle' | 'done' | 'error' | ExportPhase
+type Mp4Status = 'idle' | 'building' | 'ready' | 'unavailable'
 
 interface CompletedExport {
   blob: Blob
@@ -69,6 +70,13 @@ export function Composer() {
   const exportUrlRef = useRef<string | null>(null)
   const isExporting = typeof exportStatus === 'object'
 
+  const [mp4Status, setMp4Status] = useState<Mp4Status>('idle')
+  const [mp4Result, setMp4Result] = useState<{ blob: Blob; url: string } | null>(null)
+  const [mp4Reason, setMp4Reason] = useState<string | null>(null)
+  const mp4UrlRef = useRef<string | null>(null)
+  const mp4RunIdRef = useRef(0)
+  const showMp4Debug = new URLSearchParams(location.search).has('debug')
+
   useEffect(() => {
     if (!paperImage) return
     const timer = setTimeout(() => {
@@ -88,6 +96,7 @@ export function Composer() {
   useEffect(() => {
     return () => {
       if (exportUrlRef.current) URL.revokeObjectURL(exportUrlRef.current)
+      if (mp4UrlRef.current) URL.revokeObjectURL(mp4UrlRef.current)
     }
   }, [])
 
@@ -117,6 +126,27 @@ export function Composer() {
         showCustomPaperNotice,
       })
       setExportStatus('done')
+
+      // Build the MP4 in the background, right away — not on a tap — so it's already a File by
+      // the time the user might tap "Share video" (iOS only allows navigator.share() to fire
+      // synchronously inside a tap). A run id lets a later "Make another"/new GIF cancel this.
+      mp4RunIdRef.current += 1
+      const runId = mp4RunIdRef.current
+      setMp4Status('building')
+      setMp4Reason(null)
+      void exportMp4(previewConfig, undefined, () => mp4RunIdRef.current !== runId).then((outcome) => {
+        if (mp4RunIdRef.current !== runId) return // superseded — discard silently
+        if (!outcome.ok) {
+          setMp4Status('unavailable')
+          setMp4Reason(outcome.reason)
+          return
+        }
+        if (mp4UrlRef.current) URL.revokeObjectURL(mp4UrlRef.current)
+        const url = URL.createObjectURL(outcome.blob)
+        mp4UrlRef.current = url
+        setMp4Result({ blob: outcome.blob, url })
+        setMp4Status('ready')
+      })
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'GIF export failed.')
       setExportStatus('error')
@@ -141,6 +171,15 @@ export function Composer() {
     setExportResult(null)
     setExportError(null)
     setExportStatus('idle')
+
+    mp4RunIdRef.current += 1 // cancels any in-flight MP4 build via its shouldAbort check
+    if (mp4UrlRef.current) {
+      URL.revokeObjectURL(mp4UrlRef.current)
+      mp4UrlRef.current = null
+    }
+    setMp4Result(null)
+    setMp4Reason(null)
+    setMp4Status('idle')
   }, [])
 
   const showResult = exportStatus === 'done' && exportResult !== null
@@ -166,6 +205,9 @@ export function Composer() {
             showCustomPaperNotice={exportResult.showCustomPaperNotice}
             onPlayAgain={handlePlayAgain}
             onMakeAnother={handleMakeAnother}
+            mp4Status={mp4Status}
+            mp4Blob={mp4Result?.blob ?? null}
+            mp4Reason={showMp4Debug ? mp4Reason : undefined}
           />
         ) : (
           <Preview config={previewConfig} size={CANVAS_SIZE} initialT={1} showEndKey={state} />

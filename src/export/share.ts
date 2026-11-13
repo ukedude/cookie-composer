@@ -2,11 +2,14 @@ export interface ShareResult {
   method: 'share' | 'download' | 'cancelled'
 }
 
-export async function shareOrDownloadGif(
-  blob: Blob,
-  filename = 'kindness-cookie.gif',
-): Promise<ShareResult> {
-  const file = new File([blob], filename, { type: 'image/gif' })
+interface ShareFileOptions {
+  blob: Blob
+  filename: string
+  mimeType: string
+}
+
+async function shareOrDownloadFile({ blob, filename, mimeType }: ShareFileOptions): Promise<ShareResult> {
+  const file = new File([blob], filename, { type: mimeType })
 
   if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
     try {
@@ -27,4 +30,12 @@ export async function shareOrDownloadGif(
   anchor.click()
   URL.revokeObjectURL(url)
   return { method: 'download' }
+}
+
+export function shareOrDownloadGif(blob: Blob, filename = 'kindness-cookie.gif'): Promise<ShareResult> {
+  return shareOrDownloadFile({ blob, filename, mimeType: 'image/gif' })
+}
+
+export function shareOrDownloadMp4(blob: Blob, filename = 'kindness-cookie.mp4'): Promise<ShareResult> {
+  return shareOrDownloadFile({ blob, filename, mimeType: 'video/mp4' })
 }
