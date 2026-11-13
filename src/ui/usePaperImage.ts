@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { getCustomPaper, isCustomPaperId, loadPaperImage, PAPER_MANIFEST } from '../papers'
+import { flipImageVertically, getCustomPaper, isCustomPaperId, loadPaperImage, PAPER_MANIFEST } from '../papers'
 
-const bundledCache = new Map<string, HTMLImageElement>()
+const bundledCache = new Map<string, HTMLImageElement | ImageBitmap>()
 const customCache = new Map<string, ImageBitmap>()
 
 /** Resolves a paper id (bundled or custom) to its loaded image, caching decoded images across
@@ -57,10 +57,14 @@ export function usePaperImage(
     }
 
     setImage(null)
-    loadPaperImage(entry.path).then((img) => {
-      bundledCache.set(paperId, img)
-      if (requestIdRef.current === requestId) setImage(img)
-    })
+    loadPaperImage(entry.path)
+      .then((img): HTMLImageElement | ImageBitmap | Promise<ImageBitmap> =>
+        entry.flipY ? flipImageVertically(img) : img,
+      )
+      .then((img) => {
+        bundledCache.set(paperId, img)
+        if (requestIdRef.current === requestId) setImage(img)
+      })
   }, [paperId])
 
   return image
